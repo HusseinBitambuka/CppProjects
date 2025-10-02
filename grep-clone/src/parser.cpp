@@ -7,7 +7,7 @@ using namespace std;
 string addConcatenation(const string &regex)
 {
     if (regex.empty())
-        throw runtime_error("You did not provide a Regular Expression String");
+        throw std::invalid_argument("You did not provide a Regular Expression String");
 
     string processed;
 
