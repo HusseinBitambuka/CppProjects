@@ -2,9 +2,31 @@
 #include <queue>
 #include <stack>
 
-// Global or static counter for debugging
+/*
+============================================================
+  Thompson NFA Construction Core
+  --------------------------------
+  This file implements the primitive NFA-building operations
+  described in Ken Thompson’s 1968 paper:
+  “Regular Expression Search Algorithm” (CACM, Vol. 11, No. 6)
+
+  Each NFA has:
+    - start: pointer to the start state
+    - accept: pointer to the accept state
+    - pool: vector owning all dynamically allocated states
+
+  Memory is managed manually for educational purposes.
+============================================================
+*/
+
+// Global counter to assign unique state IDs (for debugging/visualization)
 static int GLOBAL_STATE_ID = 0;
 
+/*------------------------------------------------------------
+  Helper: createState()
+  Creates a new State object on the heap, assigns a unique ID,
+  and registers ownership in the NFA’s memory pool.
+------------------------------------------------------------*/
 State *createState(NFA &nfa)
 {
     State *s = new State{GLOBAL_STATE_ID++, {}, {}};
@@ -12,6 +34,12 @@ State *createState(NFA &nfa)
     return s;
 }
 
+/*------------------------------------------------------------
+  Helper: freeNFA()
+  Deletes all heap-allocated State objects owned by an NFA.
+  This is the only cleanup function you should call once an
+  NFA is no longer needed.
+------------------------------------------------------------*/
 void freeNFA(NFA &nfa)
 {
     for (State *s : nfa.pool)
@@ -19,48 +47,132 @@ void freeNFA(NFA &nfa)
         delete s;
     }
     nfa.pool.clear();
+    nfa.pool.shrink_to_fit();
 }
 
-// API for NFA
+/*------------------------------------------------------------
+  Base Case: createNFAfromSymbol()
+  Creates a simple NFA fragment for a single literal symbol.
 
+        [start] --symbol--> [accept]
+
+------------------------------------------------------------*/
 NFA createNFAfromSymbol(char symbol)
 {
-    NFA nfa;
+    NFA nfa{nullptr, nullptr, {}}; // explicit initialization
     State *start = createState(nfa);
-    State *accpet = createState(nfa);
-    start->transitions.push_back({symbol, accpet});
+    State *accept = createState(nfa);
+
+    start->transitions.push_back({symbol, accept});
+
+    nfa.start = start;
+    nfa.accept = accept;
     return nfa;
 }
 
+/*------------------------------------------------------------
+  Concatenation: concatenate(A, B)
+  Implements Thompson’s concatenation rule:
+
+        A.accept --ε--> B.start
+
+  The resulting NFA starts at A.start and accepts at B.accept.
+  Memory ownership of B’s states is transferred to A.
+------------------------------------------------------------*/
 NFA &concatenate(NFA &a, NFA &b)
 {
-    a.accept->epsilonTransitions.push_back(b.start); // link the a accept state with b start state
+    // Link A’s accept to B’s start using ε-transition
+    a.accept->epsilonTransitions.push_back(b.start);
+
+    // Update accept pointer and merge memory pools
     a.accept = b.accept;
-    a.pool.insert(a.pool.end(), b.pool.begin(), b.pool.end()); // transfer memory ownership to the new NFA
+    a.pool.insert(a.pool.end(), b.pool.begin(), b.pool.end());
+
+    // Clear B’s pool since ownership is transferred
     b.pool.clear();
+    b.pool.shrink_to_fit();
+
     return a;
 }
 
-NFA &unionize(NFA &a, NFA &b)
-{
-    // as layed out in the four pages paper attached to the readme, this is how Ken Thompson proposed we do Union
+/*------------------------------------------------------------
+  Union: unionize(A, B)
+  Implements Thompson’s alternation rule (A|B):
 
-    // create a new state
-    NFA res;
+            ε         ε
+        -->[A.start]   [B.start]
+          ↙              ↘
+        [newStart]     [newAccept]
+          ↖              ↙
+            ε         ε
+
+  Creates a new start and accept state, and connects them to
+  both sub-NFAs using ε-transitions.
+------------------------------------------------------------*/
+NFA unionize(NFA &a, NFA &b)
+{
+    NFA res{nullptr, nullptr, {}}; // explicit initialization
+
     State *start = createState(res);
     State *accept = createState(res);
-    res.accept = accept;
     res.start = start;
+    res.accept = accept;
 
-    // epselon-transition from the start states and the accept states of the a and b NFAs
+    // Epsilon transitions connecting sub-NFAs
     start->epsilonTransitions.push_back(a.start);
     start->epsilonTransitions.push_back(b.start);
     a.accept->epsilonTransitions.push_back(accept);
     b.accept->epsilonTransitions.push_back(accept);
 
-    // transfer memory ownership of a and b memory
+    // Transfer ownership of all states into the result
     res.pool.insert(res.pool.end(), a.pool.begin(), a.pool.end());
     res.pool.insert(res.pool.end(), b.pool.begin(), b.pool.end());
+
+    // Clear the old pools
+    a.pool.clear();
+    b.pool.clear();
+    a.pool.shrink_to_fit();
+    b.pool.shrink_to_fit();
+
+    return res;
+}
+
+/*------------------------------------------------------------
+  Kleene Star: compileKleenStar(B)
+  Implements Thompson’s closure rule (B*):
+
+             ε
+        +----------+
+        |          |
+        v          |
+      [newStart] --ε--> [newAccept]
+        |          ^
+        |          |
+        +--> B.start --ε--> B.accept
+             ^               |
+             |_______________|
+
+  This allows zero or more repetitions of the sub-NFA B.
+------------------------------------------------------------*/
+NFA compileKleenStar(NFA &b)
+{
+    NFA res{nullptr, nullptr, {}}; // explicit initialization
+
+    State *start = createState(res);
+    State *accept = createState(res);
+    res.start = start;
+    res.accept = accept;
+
+    // Epsilon transitions per Thompson’s closure construction
+    start->epsilonTransitions.push_back(b.start);    // newStart → oldStart
+    start->epsilonTransitions.push_back(accept);     // newStart → newAccept
+    b.accept->epsilonTransitions.push_back(b.start); // oldAccept → oldStart
+    b.accept->epsilonTransitions.push_back(accept);  // oldAccept → newAccept
+
+    // Merge memory ownership
+    res.pool.insert(res.pool.end(), b.pool.begin(), b.pool.end());
+    b.pool.clear();
+    b.pool.shrink_to_fit();
 
     return res;
 }
