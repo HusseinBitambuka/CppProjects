@@ -2,49 +2,21 @@
 #include <queue>
 #include <stack>
 
-NFA doConcatenation(const NFA &first, const NFA &second)
+// Global or static counter for debugging
+static int GLOBAL_STATE_ID = 0;
+
+State *createState(NFA &nfa)
 {
-    first.accept->epsilonTransitions.push_back(second.start);
-    return {first.start, second.accept};
+    State *s = new State{GLOBAL_STATE_ID++, {}, {}};
+    nfa.pool.push_back(s);
+    return s;
 }
 
-NFA buildNFA(const std::queue<char> &postfix)
+void freeNFA(NFA &nfa)
 {
-    std::stack<NFA> nfaStack;
-    std::queue<char> temp = postfix; // copy, because queue is mutable
-
-    while (!temp.empty())
+    for (State *s : nfa.pool)
     {
-        char token = temp.front();
-        temp.pop();
-
-        if (isalpha(token))
-        {
-            nfaStack.push(createBasicNFA(token));
-        }
-        else if (token == '.')
-        {
-            auto b = nfaStack.top();
-            nfaStack.pop();
-            auto a = nfaStack.top();
-            nfaStack.pop();
-            nfaStack.push(doConcatenation(a, b));
-        }
-        else if (token == '|')
-        {
-            auto b = nfaStack.top();
-            nfaStack.pop();
-            auto a = nfaStack.top();
-            nfaStack.pop();
-            nfaStack.push(doUnion(a, b));
-        }
-        else if (token == '*')
-        {
-            auto a = nfaStack.top();
-            nfaStack.pop();
-            nfaStack.push(doKleeneStar(a));
-        }
+        delete s;
     }
-
-    return nfaStack.top();
+    nfa.pool.clear();
 }

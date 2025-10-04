@@ -20,6 +20,7 @@ struct NFA
 {
     State *start;
     State *accept;
+    std::vector<State *> pool; // adding this for memory management purpose! each NFA should own the states it creates
 };
 
 // Public NFA API
