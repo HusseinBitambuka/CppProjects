@@ -1,6 +1,7 @@
 #include "../include/regex/nfa.hpp"
 #include <queue>
 #include <stack>
+#include <stdexcept>
 
 /*
 ============================================================
@@ -29,9 +30,9 @@ static int GLOBAL_STATE_ID = 0;
 ------------------------------------------------------------*/
 State *createState(NFA &nfa)
 {
-    State *s = new State{GLOBAL_STATE_ID++, {}, {}};
-    nfa.pool.push_back(s);
-    return s;
+  State *s = new State{GLOBAL_STATE_ID++, {}, {}};
+  nfa.pool.push_back(s);
+  return s;
 }
 
 /*------------------------------------------------------------
@@ -42,12 +43,12 @@ State *createState(NFA &nfa)
 ------------------------------------------------------------*/
 void freeNFA(NFA &nfa)
 {
-    for (State *s : nfa.pool)
-    {
-        delete s;
-    }
-    nfa.pool.clear();
-    nfa.pool.shrink_to_fit();
+  for (State *s : nfa.pool)
+  {
+    delete s;
+  }
+  nfa.pool.clear();
+  nfa.pool.shrink_to_fit();
 }
 
 /*------------------------------------------------------------
@@ -59,15 +60,15 @@ void freeNFA(NFA &nfa)
 ------------------------------------------------------------*/
 NFA createNFAfromSymbol(char symbol)
 {
-    NFA nfa{nullptr, nullptr, {}}; // explicit initialization
-    State *start = createState(nfa);
-    State *accept = createState(nfa);
+  NFA nfa{nullptr, nullptr, {}}; // explicit initialization
+  State *start = createState(nfa);
+  State *accept = createState(nfa);
 
-    start->transitions.push_back({symbol, accept});
+  start->transitions.push_back({symbol, accept});
 
-    nfa.start = start;
-    nfa.accept = accept;
-    return nfa;
+  nfa.start = start;
+  nfa.accept = accept;
+  return nfa;
 }
 
 /*------------------------------------------------------------
@@ -81,18 +82,18 @@ NFA createNFAfromSymbol(char symbol)
 ------------------------------------------------------------*/
 NFA &concatenate(NFA &a, NFA &b)
 {
-    // Link A’s accept to B’s start using ε-transition
-    a.accept->epsilonTransitions.push_back(b.start);
+  // Link A’s accept to B’s start using ε-transition
+  a.accept->epsilonTransitions.push_back(b.start);
 
-    // Update accept pointer and merge memory pools
-    a.accept = b.accept;
-    a.pool.insert(a.pool.end(), b.pool.begin(), b.pool.end());
+  // Update accept pointer and merge memory pools
+  a.accept = b.accept;
+  a.pool.insert(a.pool.end(), b.pool.begin(), b.pool.end());
 
-    // Clear B’s pool since ownership is transferred
-    b.pool.clear();
-    b.pool.shrink_to_fit();
+  // Clear B’s pool since ownership is transferred
+  b.pool.clear();
+  b.pool.shrink_to_fit();
 
-    return a;
+  return a;
 }
 
 /*------------------------------------------------------------
@@ -111,30 +112,30 @@ NFA &concatenate(NFA &a, NFA &b)
 ------------------------------------------------------------*/
 NFA unionize(NFA &a, NFA &b)
 {
-    NFA res{nullptr, nullptr, {}}; // explicit initialization
+  NFA res{nullptr, nullptr, {}}; // explicit initialization
 
-    State *start = createState(res);
-    State *accept = createState(res);
-    res.start = start;
-    res.accept = accept;
+  State *start = createState(res);
+  State *accept = createState(res);
+  res.start = start;
+  res.accept = accept;
 
-    // Epsilon transitions connecting sub-NFAs
-    start->epsilonTransitions.push_back(a.start);
-    start->epsilonTransitions.push_back(b.start);
-    a.accept->epsilonTransitions.push_back(accept);
-    b.accept->epsilonTransitions.push_back(accept);
+  // Epsilon transitions connecting sub-NFAs
+  start->epsilonTransitions.push_back(a.start);
+  start->epsilonTransitions.push_back(b.start);
+  a.accept->epsilonTransitions.push_back(accept);
+  b.accept->epsilonTransitions.push_back(accept);
 
-    // Transfer ownership of all states into the result
-    res.pool.insert(res.pool.end(), a.pool.begin(), a.pool.end());
-    res.pool.insert(res.pool.end(), b.pool.begin(), b.pool.end());
+  // Transfer ownership of all states into the result
+  res.pool.insert(res.pool.end(), a.pool.begin(), a.pool.end());
+  res.pool.insert(res.pool.end(), b.pool.begin(), b.pool.end());
 
-    // Clear the old pools
-    a.pool.clear();
-    b.pool.clear();
-    a.pool.shrink_to_fit();
-    b.pool.shrink_to_fit();
+  // Clear the old pools
+  a.pool.clear();
+  b.pool.clear();
+  a.pool.shrink_to_fit();
+  b.pool.shrink_to_fit();
 
-    return res;
+  return res;
 }
 
 /*------------------------------------------------------------
@@ -156,23 +157,77 @@ NFA unionize(NFA &a, NFA &b)
 ------------------------------------------------------------*/
 NFA compileKleenStar(NFA &b)
 {
-    NFA res{nullptr, nullptr, {}}; // explicit initialization
+  NFA res{nullptr, nullptr, {}}; // explicit initialization
 
-    State *start = createState(res);
-    State *accept = createState(res);
-    res.start = start;
-    res.accept = accept;
+  State *start = createState(res);
+  State *accept = createState(res);
+  res.start = start;
+  res.accept = accept;
 
-    // Epsilon transitions per Thompson’s closure construction
-    start->epsilonTransitions.push_back(b.start);    // newStart → oldStart
-    start->epsilonTransitions.push_back(accept);     // newStart → newAccept
-    b.accept->epsilonTransitions.push_back(b.start); // oldAccept → oldStart
-    b.accept->epsilonTransitions.push_back(accept);  // oldAccept → newAccept
+  // Epsilon transitions per Thompson’s closure construction
+  start->epsilonTransitions.push_back(b.start);    // newStart → oldStart
+  start->epsilonTransitions.push_back(accept);     // newStart → newAccept
+  b.accept->epsilonTransitions.push_back(b.start); // oldAccept → oldStart
+  b.accept->epsilonTransitions.push_back(accept);  // oldAccept → newAccept
 
-    // Merge memory ownership
-    res.pool.insert(res.pool.end(), b.pool.begin(), b.pool.end());
-    b.pool.clear();
-    b.pool.shrink_to_fit();
+  // Merge memory ownership
+  res.pool.insert(res.pool.end(), b.pool.begin(), b.pool.end());
+  b.pool.clear();
+  b.pool.shrink_to_fit();
 
-    return res;
+  return res;
+}
+
+NFA buildNFA(std::queue<char> &postfix)
+{
+  std::stack<NFA> stack;
+
+  while (!postfix.empty())
+  {
+    char token = postfix.front();
+    postfix.pop();
+
+    if (token == '*')
+    {
+      if (stack.empty())
+        throw std::runtime_error("Invalid postfix: '*' with empty stack");
+
+      NFA top = std::move(stack.top());
+      stack.pop();
+      stack.push(compileKleenStar(top));
+    }
+    else if (token == '.')
+    {
+      if (stack.size() < 2)
+        throw std::runtime_error("Invalid postfix: '.' requires two operands");
+
+      NFA right = std::move(stack.top());
+      stack.pop();
+      NFA left = std::move(stack.top());
+      stack.pop();
+
+      stack.push(concatenate(left, right));
+    }
+    else if (token == '|')
+    {
+      if (stack.size() < 2)
+        throw std::runtime_error("Invalid postfix: '|' requires two operands");
+
+      NFA right = std::move(stack.top());
+      stack.pop();
+      NFA left = std::move(stack.top());
+      stack.pop();
+
+      stack.push(unionize(left, right));
+    }
+    else
+    {
+      stack.push(createNFAfromSymbol(token));
+    }
+  }
+
+  if (stack.size() != 1)
+    throw std::runtime_error("Invalid postfix: leftover NFAs on stack");
+
+  return std::move(stack.top());
 }
