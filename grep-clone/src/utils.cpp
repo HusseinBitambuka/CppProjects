@@ -1,15 +1,17 @@
 #include "../include/regex/utils.hpp"
 
-std::vector<char> extractSymbolsFromRegex(const std::string &regex)
+std::set<char> extractSymbolsFromRegex(const std::string &regex)
 {
-    std::vector<char> symbols;
+    std::set<char> symbols;
 
     for (char token : regex)
     {
-        if (token != '*' || token != '|' || token != '(' || token != ')')
+        // Skip regex operators
+        if (token != '*' && token != '|' && token != '(' && token != ')' && token != '.')
         {
-            symbols.push_back(token);
+            symbols.insert(token);
         }
     }
+
     return symbols;
 }

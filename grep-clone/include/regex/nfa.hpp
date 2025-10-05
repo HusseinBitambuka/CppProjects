@@ -1,23 +1,8 @@
 #pragma once
+#include "utils.hpp"
 #include <vector>
 #include <set>
 #include <queue>
-
-// Forward declaration
-struct State;
-
-struct Transition
-{
-    char symbol;
-    State *target;
-};
-
-struct State
-{
-    int id;
-    std::vector<Transition> transitions;
-    std::vector<State *> epsilonTransitions;
-};
 
 struct NFA
 {

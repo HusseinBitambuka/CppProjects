@@ -1,8 +1,6 @@
 #include "../include/regex/nfa.hpp"
-#include <queue>
-#include <stack>
+#include "../include/regex/utils.hpp"
 #include <stdexcept>
-#include <iostream>
 
 /*
 ============================================================
