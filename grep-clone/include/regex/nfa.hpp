@@ -1,27 +1,36 @@
 #pragma once
 #include <vector>
-#include <memory>
 #include <set>
+#include <queue>
+
+// Forward declaration
+struct State;
 
 struct Transition
 {
-    char symbol; // e.g., 'a', 'b'
+    char symbol;
     State *target;
 };
 
 struct State
 {
     int id;
-    std::vector<Transition> transitions;     // labeled edges
-    std::vector<State *> epsilonTransitions; // ε edges
+    std::vector<Transition> transitions;
+    std::vector<State *> epsilonTransitions;
 };
 
 struct NFA
 {
     State *start;
     State *accept;
-    std::vector<State *> pool; // adding this for memory management purpose! each NFA should own the states it creates
+    std::vector<State *> pool;
 };
 
-// Public NFA API
-NFA buildNFA(const std::queue<char> &postfix);
+// Function declarations
+NFA createNFAfromSymbol(char symbol);
+NFA &concatenate(NFA &a, NFA &b);
+NFA unionize(NFA &a, NFA &b);
+NFA compileKleenStar(NFA &b);
+NFA buildNFA(std::queue<char> &postfix);
+void freeNFA(NFA &nfa);
+void printNFA(const NFA &nfa);

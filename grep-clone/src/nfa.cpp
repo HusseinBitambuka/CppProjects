@@ -2,6 +2,7 @@
 #include <queue>
 #include <stack>
 #include <stdexcept>
+#include <iostream>
 
 /*
 ============================================================
@@ -176,6 +177,56 @@ NFA compileKleenStar(NFA &b)
   b.pool.shrink_to_fit();
 
   return res;
+}
+
+void printNFA(const NFA &nfa)
+{
+  if (!nfa.start)
+  {
+    std::cout << "[Error] NFA has no start state.\n";
+    return;
+  }
+
+  std::stack<State *> stck;
+  std::set<const State *> visited;
+
+  stck.push(nfa.start);
+
+  std::cout << "\n=================== NFA Structure ===================\n";
+  std::cout << "Start State: " << nfa.start->id
+            << " | Accept State: " << (nfa.accept ? nfa.accept->id : -1)
+            << "\n----------------------------------------------------\n";
+
+  while (!stck.empty())
+  {
+    State *s = stck.top();
+    stck.pop();
+
+    if (visited.count(s))
+      continue;
+
+    visited.insert(s);
+
+    // Print labeled transitions
+    for (const Transition &t : s->transitions)
+    {
+      std::cout << "[State " << s->id << "] --(" << t.symbol
+                << ")--> [State " << t.target->id << "]\n";
+      if (visited.find(t.target) == visited.end())
+        stck.push(t.target);
+    }
+
+    // Print epsilon transitions
+    for (State *eps : s->epsilonTransitions)
+    {
+      std::cout << "[State " << s->id << "] --(ε)--> [State "
+                << eps->id << "]\n";
+      if (visited.find(eps) == visited.end())
+        stck.push(eps);
+    }
+  }
+
+  std::cout << "====================================================\n";
 }
 
 NFA buildNFA(std::queue<char> &postfix)
