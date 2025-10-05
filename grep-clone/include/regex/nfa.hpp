@@ -1,8 +1,5 @@
 #pragma once
 #include "utils.hpp"
-#include <vector>
-#include <set>
-#include <queue>
 
 struct NFA
 {

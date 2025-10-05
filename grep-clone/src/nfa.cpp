@@ -1,6 +1,11 @@
 #include "../include/regex/nfa.hpp"
-#include "../include/regex/utils.hpp"
 #include <stdexcept>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <queue>
+#include <stack>
+#include <set>
 
 /*
 ============================================================
