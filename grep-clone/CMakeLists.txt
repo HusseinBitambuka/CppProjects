@@ -14,6 +14,7 @@ add_library(regex_engine
     src/nfa.cpp
     src/dfa.cpp
     src/matcher.cpp
+    src/utils.cpp 
 )
 
 target_include_directories(regex_engine PUBLIC

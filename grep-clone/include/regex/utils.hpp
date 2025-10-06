@@ -23,4 +23,3 @@ struct State
 
 // Utility helpers
 std::set<char> extractSymbolsFromRegex(const std::string &regex);
-inline bool isEpsilon(char symbol) { return symbol == '\0' || symbol == 'ε'; }
