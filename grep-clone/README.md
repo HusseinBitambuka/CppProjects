@@ -1,38 +1,41 @@
 # Custom GREP Clone (C++)
 
-This project implements a simplified **regular expression engine** in C++ using a **C-style procedural design**.
-It reconstructs the core mechanics of tools like `grep` by manually building each stage of a regex engine:
+This project implements a **from-scratch regular expression engine** in modern C++ that mimics the core behavior of UNIX `grep`.
+It uses a **C-style procedural design** (raw pointers, manual memory management) to study the inner workings of regex engines at the automata level — without relying on the STL `<regex>` library or abstraction-heavy frameworks.
 
-1. **Parsing** using the Shunting Yard Algorithm
-2. **Thompson’s Construction** for NFA generation
-3. **Subset Construction** for DFA generation
-4. **Pattern Matching** using DFA simulation
+---
 
-The purpose of this design is to explore how classical automata-based regex engines can be implemented in low-level C and C++ without heavy abstraction, and to contrast this with higher-level implementations (e.g., Python).
+## Pipeline Overview
+
+Each phase corresponds to one classical stage of regex evaluation:
+
+1. **Parsing** — Converts infix regex to postfix (via Shunting Yard)
+2. **Thompson’s Construction** — Builds an **NFA** (Non-Deterministic Finite Automaton)
+3. **Subset Construction** — Converts the NFA into a **DFA**
+4. **Matching Engine** — Simulates the DFA against file lines, printing matches with **highlighted substrings**
 
 ---
 
 ## Directory Structure
 
 ```
-custom-grep/
+grep-clone/
 ├─ CMakeLists.txt
 ├─ include/
 │   └─ regex/
-│       ├─ parser.hpp      # Regex parser: adds concatenation, converts to postfix
-│       ├─ nfa.hpp         # Thompson construction: NFA and State definitions
-│       ├─ dfa.hpp         # Subset construction: builds DFA from NFA
-│       └─ matcher.hpp     # Simulates NFA/DFA for matching
+│       ├─ parser.hpp      # Regex parser and shunting-yard logic
+│       ├─ nfa.hpp         # Thompson construction (State, NFA)
+│       ├─ dfa.hpp         # Subset construction (DFA builder)
+│       ├─ matcher.hpp     # DFA simulation and matching interface
+│       ├─ utils.hpp       # Shared utilities: Transition, extractSymbols, etc.
+│       └─ ...
 ├─ src/
 │   ├─ parser.cpp
 │   ├─ nfa.cpp
 │   ├─ dfa.cpp
 │   ├─ matcher.cpp
+│   ├─ utils.cpp
 │   └─ main.cpp
-├─ tests/
-│   ├─ test_parser.cpp
-│   ├─ test_nfa.cpp
-│   └─ test_matcher.cpp
 └─ data/
     └─ sample.txt
 ```
@@ -44,36 +47,69 @@ custom-grep/
 ### Requirements
 
 - CMake ≥ 3.10
-- C++14-compatible compiler (GCC ≥ 9, Clang ≥ 10, or MSVC ≥ 2019)
+- C++17 or later (required for structured bindings and modern syntax)
+- Tested on:
 
-### Steps
+  - GCC 12.3 (Ubuntu)
+  - Clang 16 (macOS)
+
+### Build
 
 ```bash
 mkdir build && cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
-The resulting executable `grep_clone` will be created inside the `build/` directory.
-
-Run it with:
+### Run
 
 ```bash
-./grep_clone
+./grep_clone "<pattern>" <file_path>
+```
+
+Example:
+
+```bash
+./grep_clone "ab*c" ./data/sample.txt
 ```
 
 ---
 
-## Design Overview
+## Matching Behavior
 
-This project uses an explicitly **C-style architecture**—simple structs, raw pointers, and manual data control—to highlight how regex engines can be built close to the metal.
+- Reads a file line by line.
+- For each line, the DFA is simulated across the entire text to find **partial matches**.
+- Matching substrings are highlighted in color using ANSI escape codes for visual clarity.
 
-### 1. Parser
+Example output:
 
-The parser performs two steps:
+```
+3: The pattern abbbc was found here → The pattern [1;33mabbbc[0m was found here
+7: No match
+9: Found [1;33mabc[0m again here
+```
 
-- Inserts explicit concatenation operators (`.`) where implied
-- Converts infix regex to postfix (Reverse Polish Notation) using the **Shunting Yard Algorithm**
+---
+
+## Design Principles
+
+This project follows a **manual memory model** inspired by C.
+
+| Component | Allocations                  | Ownership    | Freed By    |
+| --------- | ---------------------------- | ------------ | ----------- |
+| `NFA`     | `State*` objects (via `new`) | `NFA.pool`   | `freeNFA()` |
+| `DFA`     | `DFAState*` objects          | `DFA.states` | `freeDFA()` |
+| Matcher   | Non-owning references        | —            | —           |
+
+After conversion, `freeNFA(nfa)` is called to release NFA memory, leaving the DFA as the working automaton.
+
+---
+
+## Core Algorithms
+
+### 1. Parsing (Shunting Yard)
+
+Converts infix regex into postfix form for easy stack-based evaluation.
 
 Example:
 
@@ -82,117 +118,170 @@ Input:  (ab|c)*dc
 Output: ab.c|*d.c.
 ```
 
-Files: `parser.hpp`, `parser.cpp`
+---
+
+### 2. Thompson’s Construction (NFA)
+
+Implements Thompson’s 1968 rules:
+
+| Operator | Construction Logic                                                |
+| -------- | ----------------------------------------------------------------- |
+| `a`      | start →a→ accept                                                  |
+| `AB`     | link A.accept →ε→ B.start                                         |
+| `A\|B`   | new start →ε→ A,B; A.accept,B.accept →ε→ new accept               |
+| `A*`     | new start →ε→ A.start,new accept; A.accept →ε→ A.start,new accept |
+
+Each NFA keeps track of allocated `State*` objects in its internal `pool`.
 
 ---
 
-### 2. NFA Construction (Thompson’s Construction)
+### 3. Subset Construction (DFA)
 
-Converts the postfix expression into an NFA by applying Thompson’s rules:
-
-| Operator | Construction                                                        |
-| -------- | ------------------------------------------------------------------- |
-| `a`      | start → `a` → accept                                                |
-| `AB`     | connect accept(A) →ε→ start(B)                                      |
-| `A\|B`   | new start →ε→ A and B; both accept →ε→ new accept                   |
-| `A*`     | new start →ε→ A and new accept; A.accept →ε→ A.start and new accept |
-
-NFA representation:
+Computes ε-closures and builds unique DFA states for each set of NFA states.
 
 ```cpp
-struct Transition {
-    char symbol;
-    State* target;
-};
-
-struct State {
-    int id;
-    std::vector<Transition> transitions;
-    std::vector<State*> epsilonTransitions;
-};
-
-struct NFA {
-    State* start;
-    State* accept;
-};
+std::set<State*> epsilonClosure(const std::set<State*>& states);
+std::set<State*> move(const std::set<State*>& states, char symbol);
 ```
 
-Files: `nfa.hpp`, `nfa.cpp`
+The resulting DFA is deterministic and suitable for fast matching.
 
 ---
 
-### 3. DFA Construction (Subset Construction)
+### 4. Matching & File Scanning
 
-Builds a deterministic automaton by computing the ε-closure of NFA states and creating DFA states for each unique closure.
-This eliminates non-determinism and allows linear-time matching against input strings.
+- The matcher simulates the DFA per line of text.
+- Partial matches are detected by running the DFA across all substrings.
+- Matching regions are highlighted using ANSI colors (e.g., yellow or underline).
 
-Files: `dfa.hpp`, `dfa.cpp`
+Example:
 
----
-
-### 4. Matching Phase
-
-Simulates the DFA on an input string:
-
-- Begin at the DFA’s start state
-- Follow transitions for each input character
-- Accept if the final state is an accepting state
-
-Files: `matcher.hpp`, `matcher.cpp`
+```cpp
+bool simulateDFA(const DFA& dfa, const std::string& input);
+void matchRegex(const DFA& compiledDFA, const std::string& line);
+```
 
 ---
 
 ## Example Run
 
-### Input
+Given `sample.txt`:
 
 ```
-(ab|c)*dc
+abc
+abbbc
+zzz
+cabca
 ```
 
-### Steps
+Command:
 
-1. Add concatenations → `(a.b|c).*.d.c`
-2. Convert to postfix → `ab.c|*d.c.`
-3. Build NFA (via Thompson)
-4. Convert to DFA (subset construction)
-5. Match input strings
+```bash
+./grep_clone "ab*c" data/sample.txt
+```
 
-### Test Inputs
+Output:
 
-| Input   | Result   |
-| ------- | -------- |
-| `abdc`  | Match    |
-| `ccdc`  | Match    |
-| `cabc`  | No match |
-| `abcdc` | Match    |
+```
+1: [1;33mabc[0m
+2: [1;33mabbbc[0m
+4: c[1;33mabc[0ma
+```
 
 ---
 
-## Current Development Focus
+## Memory Management and Debugging
 
-- Implementing the NFA construction logic (`nfa.cpp`)
-- Completing Thompson’s operators: concatenation, union, and Kleene star
-- Using raw pointers and manual lifetime management to better understand memory handling compared to Python implementations
+Because the system uses **manual allocation** for both NFAs and DFAs, memory control is explicit and part of the design learning goal.
+
+### Freeing Memory
+
+```cpp
+void freeNFA(NFA &nfa);
+void freeDFA(DFA &dfa);
+```
+
+Both functions recursively free all dynamically allocated `State*` and `DFAState*` objects and clear their internal containers.
+
+Example:
+
+```cpp
+DFA dfa = compileDFA("ab*c");
+simulateDFA(dfa, "abbbc");
+freeDFA(dfa); // releases all allocated DFA states
+```
+
+You should call `freeNFA()` immediately after converting to DFA:
+
+```cpp
+NFA nfa = buildNFA(postfix);
+DFA dfa = convertNFAtoDFA(nfa, alphabet);
+freeNFA(nfa);
+```
 
 ---
 
-## Planned Extensions
+### State ID Tracking
+
+All `State` objects are assigned an incremental integer ID at creation via a global counter:
+
+```cpp
+static int GLOBAL_STATE_ID = 0;
+```
+
+This allows deterministic debugging and easy visualization of transitions.
+
+---
+
+### Visualizing NFAs and DFAs
+
+For debugging purposes, a helper function prints all transitions, including ε-transitions:
+
+```cpp
+void printNFA(const NFA &nfa);
+```
+
+Example output:
+
+```
+Printing the NFA output:
+===========================================
+S0 -> S1 (symbol: a)
+S1 -> S2 (symbol: ε)
+S2 -> S3 (symbol: b)
+S3 -> S4 (symbol: ε)
+```
+
+A similar function for DFAs can be added to inspect deterministic transitions:
+
+```cpp
+void printDFA(const DFA &dfa);
+```
+
+This is useful for tracing subset construction correctness or visualizing the minimized transition graph.
+
+---
+
+## Future Work
 
 - Add support for:
 
   - `+` (one or more)
-  - `?` (zero or one)
+  - `?` (optional)
   - Character classes (`[a-z]`)
-  - Escaped operators (`\|`, `\*`, etc.)
+  - Escaped operators (`\*`, `\|`, etc.)
 
-- DFA minimization and table-driven transitions
-- Streaming file input to implement real `grep`-like search behavior
+- DFA minimization
+- Add line number and byte offset tracking
+- Multi-threaded file scanning
+- Benchmark performance against `grep` and Python’s `re`
 
 ---
 
 ## References
 
-- Ken Thompson, _Regular Expression Search Algorithm_, Communications of the ACM, 1968. [PDF link](https://dl.acm.org/doi/pdf/10.1145/363347.363387)
-- Russ Cox, _Regular Expression Matching Can Be Simple and Fast_, 2007. [Article link](https://swtch.com/~rsc/regexp/regexp1.html)
-- Aho, Sethi, Ullman. _Compilers: Principles, Techniques, and Tools_ (“The Dragon Book”).
+- Ken Thompson, _Regular Expression Search Algorithm_, **Communications of the ACM**, 1968.
+  [PDF](https://dl.acm.org/doi/pdf/10.1145/363347.363387)
+- Russ Cox, _Regular Expression Matching Can Be Simple and Fast_, 2007.
+  [Article](https://swtch.com/~rsc/regexp/regexp1.html)
+- Aho, Sethi, Ullman. _Compilers: Principles, Techniques, and Tools_ (The Dragon Book).
