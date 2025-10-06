@@ -47,7 +47,7 @@ std::set<State *> move(const std::set<State *> &states, char symbol);
 /**
  * Helper to check if any state in a set is an accepting NFA state.
  */
-bool containsAccept(const std::set<State *> &states, State *accept);
+bool containsAcceptState(const std::set<State *> &states, State *accept);
 
 /**
  * Clean up all allocated DFA states.
