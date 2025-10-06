@@ -1,29 +1,35 @@
 #include "../include/regex/matcher.hpp"
 #include <iostream>
 
-bool simulateDFA(const DFA &dfa, const std::string &input)
+std::vector<std::pair<size_t, size_t>> findAllMatches(const DFA &dfa, const std::string &input)
 {
+    std::vector<std::pair<size_t, size_t>> matches;
+
     if (!dfa.start)
-    {
         throw std::invalid_argument("DFA has no start state");
-    }
 
-    DFAState *current = dfa.start;
-
-    for (char ch : input)
+    for (size_t i = 0; i < input.size(); ++i)
     {
-        auto it = current->transitions.find(ch);
-        if (it == current->transitions.end())
-        {
-            return false; // No transition → reject
-        }
-        current = it->second;
-    }
+        DFAState *current = dfa.start;
 
-    return current->isAccepting;
+        for (size_t j = i; j < input.size(); ++j)
+        {
+            auto it = current->transitions.find(input[j]);
+            if (it == current->transitions.end())
+                break;
+
+            current = it->second;
+            if (current->isAccepting)
+            {
+                matches.push_back({i, j});
+                break; // start new search after this match
+            }
+        }
+    }
+    return matches;
 }
 
-bool matchRegex(const std::string &pattern, const std::string &input)
+DFA compileDFA(const std::string &pattern)
 {
     try
     {
@@ -40,19 +46,21 @@ bool matchRegex(const std::string &pattern, const std::string &input)
         std::set<char> alphabet = extractSymbolsFromRegex(pattern);
 
         //   Convert NFA → DFA (Subset construction)
+
         DFA dfa = convertNFAtoDFA(nfa, alphabet);
 
-        //   Simulate DFA
-        bool result = simulateDFA(dfa, input);
-
         freeNFA(nfa);
-        freeDFA(dfa);
-
-        return result;
+        return dfa;
     }
     catch (const std::exception &e)
     {
         std::cerr << "[Regex Error] " << e.what() << "\n";
-        return false;
+        return DFA{};
     }
+}
+
+void matchRegex(const DFA &compiledDFA, const std::string &line)
+{
+    std::vector<std::pair<size_t, size_t>> matches = findAllMatches(compiledDFA, line);
+    printHighlightedLine(line, matches);
 }

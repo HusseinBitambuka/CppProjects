@@ -7,7 +7,8 @@
 #include "utils.hpp"
 
 /// High-level API: compiles a regex into an internal automaton and tests input
-bool matchRegex(const std::string &pattern, const std::string &input);
+void matchRegex(const DFA &compiledDFA, const std::string &line);
 
-/// Optional utility for debugging DFA execution
-bool simulateDFA(const DFA &dfa, const std::string &input);
+std::vector<std::pair<size_t, size_t>> findAllMatches(const DFA &dfa, const std::string &input);
+
+DFA compileDFA(const std::string &pattern);

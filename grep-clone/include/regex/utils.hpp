@@ -23,3 +23,5 @@ struct State
 
 // Utility helpers
 std::set<char> extractSymbolsFromRegex(const std::string &regex);
+
+void printHighlightedLine(const std::string &line, const std::vector<std::pair<size_t, size_t>> &matches);

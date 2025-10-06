@@ -1,8 +1,6 @@
 #include "../include/regex/matcher.hpp"
-
 #include <fstream>
 #include <iostream>
-#include <string>
 
 int main(int argc, char *argv[])
 {
@@ -12,13 +10,15 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    const std::string pattern = argv[1];
-    const std::string filePath = argv[2];
+    std::string pattern = argv[1];
+    std::string filePath = argv[2];
+
+    DFA compiled = compileDFA(pattern);
 
     std::ifstream file(filePath);
     if (!file)
     {
-        std::cerr << "Error: cannot open file: " << filePath << "\n";
+        std::cerr << "Error: cannot open file " << filePath << "\n";
         return 1;
     }
 
@@ -27,12 +27,10 @@ int main(int argc, char *argv[])
 
     while (std::getline(file, line))
     {
-        if (matchRegex(pattern, line))
-        {
-            std::cout << lineNumber << ": " << line << "\n";
-        }
-        ++lineNumber;
+        std::cout << lineNumber << ": ";
+        matchRegex(compiled, line);
+        lineNumber++;
     }
 
-    return 0;
+    freeDFA(compiled);
 }
