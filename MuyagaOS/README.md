@@ -225,10 +225,3 @@ Memory management strategy:
 
 MuyagaOS is an evolving educational environment — part VM, part OS, and part creative experiment in systems design.
 Each component (CPU, FS, Kernel) can be run, tested, and extended independently.
-
-```
-
----
-
-Would you like me to now generate a companion `docs/architecture.md` file that visualizes and explains how the **CPU**, **memory**, **BJFS**, and **kernel** communicate internally (with ASCII diagrams and initialization flow)?
-```
