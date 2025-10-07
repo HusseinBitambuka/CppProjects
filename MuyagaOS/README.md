@@ -1,10 +1,3 @@
-Of course — here’s the same **README.md for MuyagaOS**, with all emojis removed and written in a clean, professional tone suitable for a GitHub repository or documentation site.
-
----
-
-## README.md
-
-```markdown
 # MuyagaOS
 
 **MuyagaOS** is an educational operating system and virtual machine written entirely in modern **C++**, inspired by classic 8-bit architectures like the **MOS 6502**.  
@@ -35,6 +28,7 @@ This design makes MuyagaOS both **educational and extensible** — ideal for exp
 ---
 
 ## Architecture Overview
+
 ```
 
 +----------------------------------------------------------+
@@ -85,21 +79,23 @@ MuyagaOS/
 ├── docs/ # Architecture, syscall table, file system spec
 └── scripts/ # Build, run, and setup scripts
 
-````
+```
 
 ---
 
 ## Build and Run
 
 ### Requirements
+
 - CMake ≥ 3.16
 - C++17-compatible compiler (GCC ≥ 9, Clang ≥ 10)
 
 ### Build
+
 ```bash
 chmod +x scripts/build_all.sh
 ./scripts/build_all.sh
-````
+```
 
 ### Run VM
 

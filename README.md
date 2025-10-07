@@ -1,120 +1,145 @@
 # C++ Systems Projects
 
-This repository is a collection of **standalone C++ systems projects**, each exploring a fundamental layer of computing — from text processing and compiler design to databases, operating systems, and deep learning frameworks.
+This repository is a collection of **standalone C++ systems projects**, each exploring a fundamental layer of computer systems — from language parsing and compilation to operating systems, databases, and deep learning frameworks.
 
-The goal is to build each component **from scratch**, with each project adopting a _single, consistent memory management model_:
-
-- Some projects use **manual memory management** in a **C-style design**, emphasizing pointers, lifetimes, and explicit deallocation.
-- Other projects use **modern C++ smart pointers (RAII)** and standard containers for resource safety and ownership tracking.
-
-No project mixes these paradigms — each serves as a controlled exploration of one design philosophy, allowing clean comparisons between low-level and modern C++ systems approaches.
-
-Each subproject is **self-contained**, independently compilable, testable, and executable.
+Every project is built **from scratch**, in modern C++, emphasizing explicit data control, low-level design, and conceptual clarity.  
+Some use **manual memory management** (for realism and learning), while others use **smart pointers or pools** (for safety and maintainability).  
+No project mixes both approaches internally — each is internally consistent and designed to highlight one style of memory model.
 
 ---
 
 ## Overview of Projects
 
-| Directory        | Description                                                                              | Focus                                        |
-| ---------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `grep_clone/`    | Custom regex engine based on Thompson’s NFA construction and the Shunting Yard algorithm | Formal languages, parsing, automata          |
-| `compiler_6502/` | Minimal compiler and assembler targeting the 6502 instruction set                        | Lexing, parsing, code generation             |
-| `mini_os/`       | Basic operating system simulation with processes, scheduling, and memory management      | OS fundamentals, memory, IPC                 |
-| `mini_db/`       | Lightweight database engine (in-memory or on-disk) with simple query execution           | Data layout, persistence, indexing           |
-| `cpp_server/`    | Single-threaded and multi-threaded HTTP/TCP server prototype                             | Networking, concurrency                      |
-| `tiny_dl/`       | Minimal deep learning framework similar in spirit to TinyGrad                            | Tensor algebra, autodiff, computation graphs |
-| `shared/`        | Common utilities reused across some modules                                              | Memory pools, error handling, logging        |
+| Directory        | Description                                                              | Focus                                       | Memory Strategy                                        |
+| ---------------- | ------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------ |
+| `grep_clone/`    | Custom regex engine using Thompson’s NFA and the Shunting Yard algorithm | Parsing, automata theory, text search       | Manual (raw pointers)                                  |
+| `MuyagaOS/`      | Educational virtual machine and operating system replacing `mini_os`     | VM, kernel, memory, filesystem, processes   | Mixed by module (manual for kernel, smart for devices) |
+| `MuyagaBJ/`      | Educational compiler targeting the MuyagaOS VM                           | Parsing, code generation, runtime interface | Manual (explicit AST + heap allocation)                |
+| `compiler_6502/` | Minimal compiler and assembler targeting the 6502 instruction set        | Lexing, parsing, assembly output            | Manual                                                 |
+| `mini_db/`       | Lightweight database engine with on-disk persistence                     | Storage, indexing, buffer management        | Smart pointers                                         |
+| `cpp_server/`    | Multi-threaded TCP/HTTP server prototype                                 | Networking, concurrency, socket I/O         | Smart pointers                                         |
+| `tiny_dl/`       | Minimal deep learning framework inspired by TinyGrad                     | Tensor algebra, autodiff, graph computation | Smart pointers                                         |
+| `shared/`        | Common utilities reused across some modules                              | Memory pools, logging, error handling       | Mixed (configurable)                                   |
 
-Each subdirectory includes its own `CMakeLists.txt` and `README.md`.
-
----
-
-## Build Instructions
-
-Each project builds independently using **CMake**.
-
-Example:
-
-```bash
-cd grep_clone
-mkdir build && cd build
-cmake ..
-make
-./grep_clone
-```
-
-No external dependencies are required beyond a **C++17** (or newer) toolchain.
+> **Note:**  
+> `mini_os/` has been **merged into MuyagaOS**.  
+> All kernel, scheduler, and memory-management code will continue development under `MuyagaOS/`.
 
 ---
 
 ## Design Philosophy
 
-This repository explores **how complex systems are built from first principles**, emphasizing the real-world tradeoffs between manual control, abstraction, and safety.
+This repository reflects a **bottom-up exploration of computer systems** — starting from compilers and interpreters, progressing through virtual machines and operating systems, and culminating in storage and distributed computation.
 
-### Core Principles
+Guiding principles:
 
-- **One memory model per project** — no mixing of manual and automatic management within the same codebase.
-
-  - Projects like `grep_clone` and `mini_os` use **manual control** (`new`, `delete`, custom allocators).
-  - Projects like `compiler_6502` and `tiny_dl` use **RAII and smart pointers** (`std::unique_ptr`, `std::shared_ptr`).
-    This makes each system a clean “laboratory” for studying its own resource model.
-
-- **Isolation** — all projects compile and execute independently.
-
-- **Incremental complexity** — each project builds upon the ideas introduced in earlier ones, moving from parsing and automata to runtime execution, persistence, and computation.
-
-- **Educational intent** — to reimplement classical systems by hand and understand their underlying algorithms, architectures, and tradeoffs.
+- **Transparency** — implement all core systems from first principles
+- **Isolation** — each project is self-contained and independently buildable
+- **Consistency** — only one memory model per project
+- **Reproducibility** — all builds use CMake and standard C++17
+- **Educational focus** — each module demonstrates classical system design tradeoffs
 
 ---
 
 ## Suggested Learning Path
 
-A recommended order to study or build these projects:
+| Stage | Project         | Core Concepts                                    |
+| ----- | --------------- | ------------------------------------------------ |
+| 1     | `grep_clone`    | Regex parsing, postfix conversion, NFA/DFA       |
+| 2     | `compiler_6502` | Lexing, parsing, assembly generation             |
+| 3     | `MuyagaOS`      | CPU emulation, memory, kernel, filesystem        |
+| 4     | `MuyagaBJ`      | Compiler backend targeting MuyagaOS VM           |
+| 5     | `mini_db`       | Storage layout, page caching, indexing           |
+| 6     | `cpp_server`    | Concurrency and socket communication             |
+| 7     | `tiny_dl`       | Tensor operations, gradients, computation graphs |
 
-1. **`grep_clone`** — Parsing, postfix notation, NFA/DFA-based regex engine
-2. **`compiler_6502`** — Lexing, parsing, and 6502 code generation
-3. **`mini_os`** — Memory management, processes, scheduling, IPC
-4. **`mini_db`** — File systems, B-trees, storage, and query execution
-5. **`cpp_server`** — I/O multiplexing, sockets, and concurrency models
-6. **`tiny_dl`** — Tensors, computation graphs, backpropagation
-
-Each project can be studied, modified, and extended independently.
-
----
-
-## Memory Models Across Projects
-
-| Project         | Memory Model                                   | Core Tools                            | Purpose                                             |
-| --------------- | ---------------------------------------------- | ------------------------------------- | --------------------------------------------------- |
-| `grep_clone`    | Manual (raw pointers, explicit free functions) | `new`, `delete`, `freeNFA`, `freeDFA` | Study lifetime management and automata construction |
-| `compiler_6502` | RAII / smart pointers                          | `std::unique_ptr`, `std::shared_ptr`  | Safe AST and symbol table management                |
-| `mini_os`       | Manual / custom allocators                     | Simulated paging and heap             | Learn OS-level resource handling                    |
-| `mini_db`       | Configurable: in-memory vs on-disk             | Buffer pool + block cache             | Study durability and I/O control                    |
-| `cpp_server`    | RAII + thread-safe containers                  | Scoped resources, locks               | Demonstrate concurrent system design                |
-| `tiny_dl`       | Shared ownership graphs                        | `std::shared_ptr`, `weak_ptr`         | Manage interdependent computation graphs            |
-
-This design encourages learning through **contrast** — how systems differ when ownership and lifetimes are managed explicitly versus implicitly.
+`MuyagaOS` is now the **central foundation** — it will host the compiler output from **MuyagaBJ**, load binaries from its file system (BJFS), and run them inside its VM environment.
 
 ---
 
-## Future Work
+## Repository Structure
 
-- Shared runtime library for logging, allocators, and diagnostics
-- Unified build system across all projects
-- Cross-project integration (compiler → VM → OS → DB)
-- Visualization utilities for automata, ASTs, and scheduling graphs
-- Memory pool benchmarking framework (manual vs RAII)
+```
+
+C++-Systems/
+├── MuyagaOS/        # Virtual machine and educational OS
+├── MuyagaBJ/        # Compiler targeting MuyagaOS
+├── grep_clone/      # Regex engine (NFA/DFA)
+├── compiler_6502/   # 6502 compiler and assembler
+├── mini_db/         # Minimal database engine
+├── cpp_server/      # Network and concurrency prototype
+├── tiny_dl/         # Lightweight deep learning engine
+├── shared/          # Common utilities
+└── docs/            # System architecture and notes
+
+```
+
+---
+
+## Build Instructions
+
+All projects use **CMake ≥ 3.16** and a C++17-compatible compiler.
+
+To build a project:
+
+```bash
+cd <project_name>
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+```
+
+To rebuild all:
+
+```bash
+find . -type d -name build -exec rm -rf {} +
+```
+
+---
+
+## Memory Management Policy
+
+Each project has an **explicit, consistent memory management model**:
+
+- **Manual management (raw pointers)**
+  Used where understanding allocation/deallocation is part of the learning goal (e.g., regex engines, kernel internals, compiler ASTs).
+
+- **Smart pointers / RAII**
+  Used where complexity or resource lifetime management benefits from abstraction (e.g., file systems, servers, databases).
+
+The two styles are **never mixed** within the same project.
+
+---
+
+## Roadmap
+
+| Phase | Focus Area    | Description                                | Status      |
+| ----- | ------------- | ------------------------------------------ | ----------- |
+| 1     | MuyagaOS Core | CPU, memory, and devices                   | In progress |
+| 2     | Kernel Layer  | Syscalls, processes, and file system       | Planned     |
+| 3     | MuyagaBJ      | Compiler backend for MuyagaOS              | Planned     |
+| 4     | BJFS Tools    | Disk formatter, file loader, and shell     | Planned     |
+| 5     | mini_db       | Persistent page manager                    | Planned     |
+| 6     | Integration   | Run MuyagaBJ-compiled binaries in MuyagaOS | Future      |
 
 ---
 
 ## References
 
-- Ken Thompson, _“Regular Expression Search Algorithm”_, **Communications of the ACM**, 1968. [PDF](https://dl.acm.org/doi/pdf/10.1145/363347.363387)
-- Russ Cox, _“Regular Expression Matching Can Be Simple and Fast”_, 2007. [Article](https://swtch.com/~rsc/regexp/regexp1.html)
-- **Charles N. Fischer, Ron K. Cytron, and Richard J. LeBlanc, Jr.**, _“Crafting a Compiler”_ (Pearson, 2010)
-- **CMU Database Systems Course (15-445/645)** – Carnegie Mellon University. [Course Site](https://15445.courses.cs.cmu.edu/)
-- **Alex Petrov**, _“Database Internals”_ (O’Reilly, 2019)
+- **Ken Thompson**, _“Regular Expression Search Algorithm”_, CACM (1968)
+- **Russ Cox**, _“Regular Expression Matching Can Be Simple and Fast”_, 2007
 - **Niklaus Wirth**, _“Compiler Construction”_ (Addison-Wesley, 1996)
-- **Andrew S. Tanenbaum**, _“Modern Operating Systems”_
+- **Andrew Tanenbaum**, _“Modern Operating Systems”_
 - **Patterson & Hennessy**, _“Computer Organization and Design”_
-- **Aho, Sethi, Ullman**, _“Compilers: Principles, Techniques, and Tools”_ (“The Dragon Book”)
+- **Fisher & LeBlanc**, _“Crafting a Compiler”_
+- **Alex Petrov**, _“Database Internals”_ (O’Reilly, 2019)
+- **CMU Database Systems Course (15-445/645)**
+- **MIT 6.S081**, _“Operating System Engineering”_
+- **CMU 15-213**, _“Introduction to Computer Systems”_
+
+---
+
+## Author’s Note
+
+This repository represents an **integrated systems laboratory** — where virtual machines, compilers, file systems, and databases evolve together.
+Each project is both an independent experiment and a step toward a unified software ecosystem centered around **MuyagaOS**.
