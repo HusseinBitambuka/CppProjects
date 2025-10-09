@@ -6,6 +6,18 @@ The compiler is written entirely in **modern C++17** and serves as a learning en
 
 ---
 
+## Background
+
+The project builds on earlier work completed during college:  
+a **browser-based implementation of MuyagaBJ**, written in **TypeScript**, which provided a virtual CPU and instruction visualizer.  
+That project can be found here:
+
+**Repository:** [HusseinBitambuka/muyagaBJ](https://github.com/HusseinBitambuka/muyagaBJ/tree/main)
+
+The C++ version extends that foundation, focusing on code generation, instruction emission, and integration with **MuyagaOS**.
+
+---
+
 ## Project Overview
 
 | Component              | Description                                                               |
@@ -41,27 +53,27 @@ The compiler is written entirely in **modern C++17** and serves as a learning en
 
 MuyagaBJ/
 ├── include/
-│   ├── token.hpp
-│   ├── lexer.hpp
-│   ├── parser.hpp
-│   ├── ast.hpp
-│   ├── codegen.hpp
-│   ├── symbol_table.hpp
-│   └── utils.hpp
+│ ├── token.hpp
+│ ├── lexer.hpp
+│ ├── parser.hpp
+│ ├── ast.hpp
+│ ├── codegen.hpp
+│ ├── symbol_table.hpp
+│ └── utils.hpp
 │
 ├── src/
-│   ├── lexer.cpp
-│   ├── parser.cpp
-│   ├── codegen.cpp
-│   ├── symbol_table.cpp
-│   └── main.cpp
+│ ├── lexer.cpp
+│ ├── parser.cpp
+│ ├── codegen.cpp
+│ ├── symbol_table.cpp
+│ └── main.cpp
 │
 ├── grammar.mlg
 │
 ├── tests/
-│   ├── test_lexer.cpp
-│   ├── test_parser.cpp
-│   ├── test_codegen.cpp
+│ ├── test_lexer.cpp
+│ ├── test_parser.cpp
+│ ├── test_codegen.cpp
 │
 └── examples/
 ├── factorial.mlg
@@ -149,6 +161,7 @@ loop_end:
 
 ## References
 
+- “Crafting Compilers” — Charles N. Fischer, Ron K. Cytron, and Richard J. LeBlanc
 - “Writing a C Compiler” — Nora Sandler
 - “Let's Build a Compiler” — Jack Crenshaw
 - 6502 Instruction Set Reference — MOS Technology (1975)
@@ -162,6 +175,4 @@ MuyagaLang is part of a broader educational system that includes:
 - **MuyagaBJ** — compiler backend
 - **MuyagaOS** — educational operating system and runtime
 - **MuyagaVM** — virtual machine executing MuyagaBJ binaries
-- **BJFS** — simple block-based file system
-
-Together, they provide a complete foundation for exploring compiler construction, instruction-level emulation, and operating systems.
+- **BJFS** — block-based file system
