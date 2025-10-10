@@ -1,0 +1,25 @@
+// Simple MuyagaLang program
+func main() {
+    let message = "Hello, Muyaga!";
+    print(message);
+
+    let count = 3;
+    while (count > 0) {
+        print("Counting down...");
+        count = count - 1;
+    }
+
+    if (count == 0) {
+        print("Blast off!");
+    } else {
+        print("Error: countdown failed.");
+    }
+
+    // Demonstrate heap allocation and char usage
+    let ch = 'A';
+    let str = alloc(16);
+    print("Allocated string buffer.");
+
+    free(str);
+    print("Memory freed. Exiting...");
+}
